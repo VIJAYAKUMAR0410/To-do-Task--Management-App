@@ -1,0 +1,343 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from "/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "/components/ui/card";
+import { Input } from "/components/ui/input";
+import { Label } from "/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Trash2, Edit, Plus, Check, X, LogOut, User } from "lucide-react";
+
+interface Todo {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  createdAt: Date;
+}
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export default function TodoApp() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [showLogin, setShowLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [newTodo, setNewTodo] = useState({ title: '', description: '' });
+  const [editingTodo, setEditingTodo] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ title: '', description: '' });
+
+  // Mock authentication - in real app, this would call your backend
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Mock login - replace with actual API call
+    const mockUser = { id: '1', email, name: email.split('@')[0] };
+    setCurrentUser(mockUser);
+    localStorage.setItem('currentUser', JSON.stringify(mockUser));
+    loadTodos();
+  };
+
+  const handleSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Mock signup - replace with actual API call
+    const mockUser = { id: Date.now().toString(), email, name };
+    setCurrentUser(mockUser);
+    localStorage.setItem('currentUser', JSON.stringify(mockUser));
+    loadTodos();
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setTodos([]);
+    localStorage.removeItem('currentUser');
+    setEmail('');
+    setPassword('');
+    setName('');
+  };
+
+  const loadTodos = () => {
+    // Mock loading todos - replace with actual API call
+    const mockTodos: Todo[] = [
+      {
+        id: '1',
+        title: 'Complete project documentation',
+        description: 'Write comprehensive docs for the todo app',
+        completed: false,
+        createdAt: new Date()
+      },
+      {
+        id: '2',
+        title: 'Review code',
+        description: 'Review and refactor the todo app code',
+        completed: true,
+        createdAt: new Date()
+      }
+    ];
+    setTodos(mockTodos);
+  };
+
+  const addTodo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTodo.title.trim()) return;
+
+    const todo: Todo = {
+      id: Date.now().toString(),
+      title: newTodo.title,
+      description: newTodo.description,
+      completed: false,
+      createdAt: new Date()
+    };
+
+    setTodos([...todos, todo]);
+    setNewTodo({ title: '', description: '' });
+  };
+
+  const updateTodo = (id: string, updates: Partial<Todo>) => {
+    setTodos(todos.map(todo => 
+      todo.id === id ? { ...todo, ...updates } : todo
+    ));
+  };
+
+  const deleteTodo = (id: string) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
+  const startEdit = (todo: Todo) => {
+    setEditingTodo(todo.id);
+    setEditForm({ title: todo.title, description: todo.description });
+  };
+
+  const saveEdit = (id: string) => {
+    updateTodo(id, { title: editForm.title, description: editForm.description });
+    setEditingTodo(null);
+    setEditForm({ title: '', description: '' });
+  };
+
+  const cancelEdit = () => {
+    setEditingTodo(null);
+    setEditForm({ title: '', description: '' });
+  };
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+      loadTodos();
+    }
+  }, []);
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">
+              {showLogin ? 'Login' : 'Sign Up'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {showLogin ? 'Welcome back! Please login to continue.' : 'Create a new account'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={showLogin ? handleLogin : handleSignup} className="space-y-4">
+              {!showLogin && (
+                <div>
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required={!showLogin}
+                  />
+                </div>
+              )}
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                {showLogin ? 'Login' : 'Sign Up'}
+              </Button>
+            </form>
+            <div className="mt-4 text-center">
+              <Button
+                variant="link"
+                onClick={() => setShowLogin(!showLogin)}
+              >
+                {showLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-900">My Todo App</h1>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <User className="w-5 h-5 text-gray-600" />
+              <span className="text-sm text-gray-600">{currentUser.name}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Add New Todo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={addTodo} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={newTodo.title}
+                  onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
+                  placeholder="Enter todo title"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={newTodo.description}
+                  onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
+                  placeholder="Enter todo description (optional)"
+                  rows={3}
+                />
+              </div>
+              <Button type="submit" className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Todo
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Your Todos</h2>
+          {todos.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-gray-500">No todos yet. Add one above to get started!</p>
+              </CardContent>
+            </Card>
+          ) : (
+            todos.map((todo) => (
+              <Card key={todo.id} className={todo.completed ? 'opacity-75' : ''}>
+                <CardContent className="p-4">
+                  {editingTodo === todo.id ? (
+                    <div className="space-y-4">
+                      <Input
+                        value={editForm.title}
+                        onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                        className="font-semibold"
+                      />
+                      <Textarea
+                        value={editForm.description}
+                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        rows={2}
+                      />
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={() => saveEdit(todo.id)}
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={cancelEdit}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className={`font-semibold ${todo.completed ? 'line-through text-gray-500' : ''}`}>
+                            {todo.title}
+                          </h3>
+                          {todo.description && (
+                            <p className="text-sm text-gray-600 mt-1">{todo.description}</p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-2">
+                            Created: {todo.createdAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2 ml-4">
+                          <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={(e) => updateTodo(todo.id, { completed: e.target.checked })}
+                            className="w-5 h-5 text-blue-600 rounded"
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEdit(todo)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteTodo(todo.id)}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
